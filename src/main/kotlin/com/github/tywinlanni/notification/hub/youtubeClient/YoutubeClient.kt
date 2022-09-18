@@ -36,9 +36,8 @@ class YoutubeClient(private val config: YoutubeConfiguration) {
         parameter(key = "type", value = "channel")
     }.body<SearchResult.ChannelSearchResult>()
 
-    suspend fun searchChannelByNameNextPage(channelName: String, pageToken: String) = client.get("youtube/v3/search") {
+    suspend fun searchChannelByNameNextPage(pageToken: String) = client.get("youtube/v3/search") {
         parameter(key = "part", value = "snippet")
-        parameter(key = "q", value = channelName)
         parameter(key = "type", value = "channel")
         parameter(key = "pageToken", value = pageToken)
     }.body<SearchResult.ChannelSearchResult>()

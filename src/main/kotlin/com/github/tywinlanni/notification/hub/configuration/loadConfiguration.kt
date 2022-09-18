@@ -10,11 +10,14 @@ fun Application.loadConfiguration(): Configuration =
             apiKey = environment.config.propertyOrNull("youtube.api_key")?.getString() ?: error("Api key not found"),
             applicationName = environment.config.propertyOrNull("youtube.application_name")?.getString() ?: error("Application name not found"),
         ),
-        auth = Auth(
-            base = BaseAuth(
-                userName = environment.config.propertyOrNull("ktor.auth.base.username")?.getString() ?: error("Base auth username not found"),
-                password = environment.config.propertyOrNull("ktor.auth.base.password")?.getString() ?: error("Base auth password not found"),
-            )
+        ktorConfiguration = KtorConfiguration(
+            port = environment.config.propertyOrNull("ktor.deployment.port")?.getString()?.toIntOrNull() ?: error("Application port not found"),
+            auth = Auth(
+                base = BaseAuth(
+                    userName = environment.config.propertyOrNull("ktor.auth.base.username")?.getString() ?: error("Base auth username not found"),
+                    password = environment.config.propertyOrNull("ktor.auth.base.password")?.getString() ?: error("Base auth password not found"),
+                )
+            ),
         ),
         databaseConfiguration = DatabaseConfiguration(
             name = environment.config.propertyOrNull("database.name")?.getString() ?: error("Database name not found"),

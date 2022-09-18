@@ -2,7 +2,7 @@ package com.github.tywinlanni.notification.hub.configuration
 
 data class Configuration(
     val youTubeConfiguration: YoutubeConfiguration,
-    val auth: Auth,
+    val ktorConfiguration: KtorConfiguration,
     val databaseConfiguration: DatabaseConfiguration,
     val telegramConfiguration: TelegramConfiguration,
 )
@@ -12,6 +12,11 @@ data class YoutubeConfiguration(
     val clientSecret: String,
     val apiKey: String,
     val applicationName: String,
+)
+
+data class KtorConfiguration(
+    val port: Int,
+    val auth: Auth,
 )
 
 data class Auth(

@@ -22,7 +22,7 @@ class YoutubeWatcher private constructor(
         val telegramBotClient: TelegramBotClient,
     ) {
         private val youtubeWatcher = YoutubeWatcher(dao, youtubeClient, telegramBotClient)
-        suspend fun loadChannels() = apply { youtubeWatcher.loadChannels() }
+        fun loadChannels() = apply { runBlocking { youtubeWatcher.loadChannels() } }
         fun startWatching() = apply { youtubeWatcher.startWatching() }
         fun build() = youtubeWatcher
     }
@@ -33,9 +33,9 @@ class YoutubeWatcher private constructor(
     private val mutex = Mutex()
     private val watcherJob = launch(start = CoroutineStart.LAZY) {
         while (isActive) {
-            delay(30_000)
-            checkChannels()
             loadChannels()
+            checkChannels()
+            delay(30_000)
         }
     }
     private val notificationJob = SupervisorJob()
@@ -51,38 +51,34 @@ class YoutubeWatcher private constructor(
     private suspend fun checkChannels() {
         this.coroutineContext {
             // Wait while old notifications be sends
-            notificationJob.children.forEach { it.join() }
+            //notificationJob.children.forEach { it.join() }
             mutex.withLock {
                 targetChannels
-                    .windowed(100)
-                    .forEach { youTubeChannels: List<YouTubeChannel> ->
-                        youTubeChannels.map { channel: YouTubeChannel ->
-                            launch {
-                                youtubeClient.searchLastVideoOnChannel(
-                                    channelId = channel.channelId,
-                                    publishedAfter = channel.lastVideoPublishedAt,
-                                ).takeIf { lastVideo: SearchResult.VideoSearchResult -> lastVideo.items.isNotEmpty() }
-                                    ?.let { lastVideo: SearchResult.VideoSearchResult ->
-                                        if (channel.lastVideoPublishedAt == null || channel.lastVideoPublishedAt != lastVideo.items[0].snippet.publishedAt) {
-                                            dao.updateLastVideoPublishDate(
-                                                publishDate = lastVideo.items[0].snippet.publishedAt,
-                                                channelId = channel._id,
-                                            )
-                                            dao.getUsersSubscribedToChannel(channel._id).forEach { user: User ->
-                                                CoroutineScope(Dispatchers.IO + notificationJob).launch {
-                                                    telegramBotClient.sendNotification(
-                                                        telegramId = user.telegramId,
-                                                        video = lastVideo.items[0],
-                                                    )
-                                                }
+                    .map { channel: YouTubeChannel ->
+                        launch {
+                            youtubeClient.searchLastVideoOnChannel(
+                                channelId = channel.channelId,
+                                publishedAfter = channel.lastVideoPublishedAt,
+                            ).takeIf { lastVideo: SearchResult.VideoSearchResult -> lastVideo.items.isNotEmpty() }
+                                ?.let { lastVideo: SearchResult.VideoSearchResult ->
+                                    if (channel.lastVideoPublishedAt == null || channel.lastVideoPublishedAt != lastVideo.items[0].snippet.publishedAt) {
+                                        dao.updateLastVideoPublishDate(
+                                            channel = channel.copy(lastVideoPublishedAt = lastVideo.items[0].snippet.publishedAt)
+                                        )
+                                        dao.getUsersSubscribedToChannel(channel._id).forEach { user: User ->
+                                            CoroutineScope(Dispatchers.IO + notificationJob).launch {
+                                                telegramBotClient.sendNotification(
+                                                    telegramId = user.telegramId,
+                                                    video = lastVideo.items[0],
+                                                )
                                             }
                                         }
-
                                     }
-                            }
-                        }.joinAll()
-                    }
+
+                                }
+                        }
+                    }.joinAll()
+                }
             }
-        }
     }
 }

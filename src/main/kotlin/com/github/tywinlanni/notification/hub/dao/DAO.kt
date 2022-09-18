@@ -15,6 +15,6 @@ interface DAO {
 
     suspend fun getAllChannels(): List<YouTubeChannel>
 
-    suspend fun updateLastVideoPublishDate(publishDate: String, channelId: Id<YouTubeChannel>)
+    suspend fun updateLastVideoPublishDate(channel: YouTubeChannel)
     suspend fun getUsersSubscribedToChannel(channelId: Id<YouTubeChannel>): List<User>
 }

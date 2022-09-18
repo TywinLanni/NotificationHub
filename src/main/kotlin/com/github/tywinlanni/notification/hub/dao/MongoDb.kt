@@ -77,10 +77,10 @@ class MongoDb(client: CoroutineClient, databaseConfig: DatabaseConfiguration) : 
             .find()
             .toList()
 
-    override suspend fun updateLastVideoPublishDate(publishDate: String, channelId: Id<YouTubeChannel>) {
+    override suspend fun updateLastVideoPublishDate(channel: YouTubeChannel) {
         channelCollection.updateOneById(
-            id = channelId,
-            update = YouTubeChannel::lastVideoPublishedAt setTo publishDate,
+            id = channel._id,
+            update = channel,
         )
     }
 

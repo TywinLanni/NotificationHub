@@ -4,6 +4,7 @@ import com.github.tywinlanni.notification.hub.dao.DAO
 import com.github.tywinlanni.notification.hub.databaseEntity.YouTubeChannel
 import com.github.tywinlanni.notification.hub.https.resources.YouTubeResource
 import com.github.tywinlanni.notification.hub.watcher.YoutubeWatcher
+import com.github.tywinlanni.notification.hub.youtubeClient.Snippet
 import com.github.tywinlanni.notification.hub.youtubeClient.YoutubeClient
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -24,14 +25,22 @@ fun Route.registerYoutubeRoutes(youtubeClient: YoutubeClient, dao: DAO, youtubeW
 
     get<YouTubeResource.NextPageResource> { nextPage ->
         call.respond(
-            message = youtubeClient.searchChannelByNameNextPage(nextPage.channelName, nextPage.nextPageToken)
+            message = youtubeClient.searchChannelByNameNextPage(nextPage.nextPageToken)
         )
     }
 
     post<YouTubeResource.AddMonitoredChannelResource> { telegramUser ->
-        val youTubeChannel: YouTubeChannel = call.receive()
+        val channel: Snippet.Channel = call.receive()
 
-        dao.addMonitoredChannel(telegramUser.userTelegramId, youTubeChannel)
+        dao.addMonitoredChannel(
+            userTelegramId = telegramUser.userTelegramId,
+            youTubeChannel = YouTubeChannel(
+                channelId = channel.channelId,
+                channelName = channel.channelTitle,
+                previewURL = channel.thumbnails.default.url,
+                description = channel.description,
+            ),
+        )
 
         call.respond(
             message = HttpStatusCodeContent(HttpStatusCode.Accepted)

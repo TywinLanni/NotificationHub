@@ -2,6 +2,7 @@ package com.github.tywinlanni.notification.hub.telegramBotClient
 
 import com.github.tywinlanni.notification.hub.configuration.TelegramConfiguration
 import com.github.tywinlanni.notification.hub.youtubeClient.Item
+import com.github.tywinlanni.notification.hub.youtubeClient.SearchResult
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
@@ -23,12 +24,12 @@ class TelegramBotClient(private val config: TelegramConfiguration) {
                 ignoreUnknownKeys = true
             })
         }
-        install(DefaultRequest) {
+        /*install(DefaultRequest) {
             url {
-                protocol = URLProtocol.HTTPS
+                protocol = URLProtocol.HTTP
                 host = "${config.host}:${config.port}"
             }
-        }
+        }*/
         install(Auth) {
             basic {
                 credentials {
@@ -39,13 +40,19 @@ class TelegramBotClient(private val config: TelegramConfiguration) {
         }
         install(HttpRequestRetry) {
             retryOnServerErrors(maxRetries = 3)
-            exponentialDelay()
+            delayMillis { 30_000L }
         }
     }
 
-    suspend fun sendNotification(telegramId: Long, video: Item.Video) = client.put("/sendNotification") {
+    suspend fun sendNotification(telegramId: Long, video: Item.Video) = client.put("http://${config.host}:${config.port}/sendNotification") {
         parameter(key = "telegramId", value = telegramId)
         contentType(ContentType.Application.Json)
         setBody(video)
+    }
+
+    suspend fun listChannels(telegramId: Long, searchResult: SearchResult.ChannelSearchResult) = client.post("http://${config.host}:${config.port}/listChannels") {
+        parameter(key = "telegramId", value = telegramId)
+        contentType(ContentType.Application.Json)
+        setBody(searchResult)
     }
 }

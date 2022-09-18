@@ -18,7 +18,6 @@ class YouTubeResource {
     data class NextPageResource(
         val parent: YouTubeResource = YouTubeResource(),
         val nextPageToken: String,
-        val channelName: String,
     )
 
     @Serializable

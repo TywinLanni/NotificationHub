@@ -10,10 +10,12 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.cio.*
+import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.resources.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
@@ -24,13 +26,13 @@ fun main(args: Array<String>): Unit = EngineMain.main(args)
 fun Application.module() {
 
     val configuration = loadConfiguration()
-
     install(Resources)
+    //install(CallLogging)
     install(Authentication) {
-        basic {
+        basic("auth-basic") {
             realm = "Access to the '/' path"
             validate { credentials ->
-                if (credentials.name == configuration.auth.base.userName && credentials.password == configuration.auth.base.password) {
+                if (credentials.name == configuration.ktorConfiguration.auth.base.userName && credentials.password == configuration.ktorConfiguration.auth.base.password) {
                     UserIdPrincipal(credentials.name)
                 } else {
                     null
@@ -48,17 +50,14 @@ fun Application.module() {
     val dao = MongoDb(KMongo.createClient().coroutine, configuration.databaseConfiguration)
     val telegramBotClient = TelegramBotClient(configuration.telegramConfiguration)
     val youtubeClient = YoutubeClient(configuration.youTubeConfiguration)
-    val youtubeWatcher = runBlocking {
-        YoutubeWatcher
+    val youtubeWatcher = YoutubeWatcher
             .Builder(dao, youtubeClient, telegramBotClient)
-            .loadChannels()
             .startWatching()
             .build()
-    }
 
     routing {
-        //authenticate("auth-basic") {
+        authenticate("auth-basic") {
             registerYoutubeRoutes(youtubeClient, dao, youtubeWatcher)
-        //}
+        }
     }
 }
